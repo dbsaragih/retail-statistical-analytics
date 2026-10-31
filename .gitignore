@@ -1,0 +1,27 @@
+# ── Data ─────────────────────────────────────────────
+data/
+
+# ── Secrets and local settings ───────────────────────
+.env
+.vscode/
+
+# ── Python ───────────────────────────────────────────
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ── R ────────────────────────────────────────────────
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+
+# ── Power BI (keep the .pbip project files, skip caches) ──
+**/.pbi/cache.abf
+**/.pbi/localSettings.json
+
+# ── OS ───────────────────────────────────────────────
+Thumbs.db
+.DS_Store
