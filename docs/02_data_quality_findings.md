@@ -10,9 +10,11 @@ analysis. Two issues would materially distort results if left untreated:
 1. **The two source sheets overlap.** Transactions dated 1–9 December 2010
    appear in both yearly sheets: 22,844 extra copies, about £440k of revenue,
    which would create a false December 2010 sales spike.
-2. **Cancellations are 7.3% of gross revenue (£1.53M).** Dropping only the
-   cancellation lines would keep the cancelled orders as sales. Revenue is
-   therefore reported net of cancellations.
+2. **Cancellations must be netted off.** Dropping only the cancellation lines
+   would keep the cancelled orders as sales. Product cancellations total
+   £716k, 3.6% of gross product sales (the raw cancelled value of £1.53M also
+   includes non-product entries such as manual adjustments and fees).
+   Revenue is therefore reported net of cancellations.
 
 ## 2. Dataset reconciliation
 
@@ -84,5 +86,41 @@ Shares are of all rows and of gross positive revenue.
 
 ## 6. Open items
 
-- Confirm the trailing-space fix for codes such as `47503J` during cleaning.
+- Confirm the trailing-space fix for codes such as `47503J`~~ Done: codes are
+  stripped in `src/clean_data.py` (T12).
 - Saturday rows (402) are kept; check whether they cluster on a few dates.
+
+## 7. Cleaning results
+
+Produced by `src/clean_data.py`.
+
+| Step | Rows removed | Rows remaining |
+|---|---|---|
+| Raw data | – | 1,067,371 |
+| T1 Exact duplicates | 34,335 | 1,033,036 |
+| T2 "A" bad-debt adjustments | 6 | 1,033,030 |
+| T3 Stock adjustments | 3,393 | 1,029,637 |
+| T4 Zero-price lines | 2,621 | 1,027,016 |
+
+Counts for T3 and T4 are below the profiling figures because earlier steps had
+already removed overlapping rows.
+
+**Split:** 1,007,912 sales lines + 19,104 cancellation lines = 1,027,016.
+
+| Revenue (GBP) | Amount |
+|---|---|
+| Gross product sales | 19,643,862 |
+| Less product cancellations | 716,463 |
+| **Net product revenue** | **18,927,399** |
+| Shipping income (separate) | 448,963 |
+
+| Flag | Count |
+|---|---|
+| Sales lines with a customer | 77.3% |
+| Bulk lines (quantity > 500) | 952 |
+| Orders with an exact matching cancellation (one-to-one) | 6,331 |
+| Sales lines in December 2011 (partial month) | 24,834 |
+
+The one-to-one match rate (34.4% of cancellations with a customer) is lower
+than the profiling estimate (40.4%) because each cancellation now flags only
+one order, the order must precede the cancellation, and duplicates are removed.
