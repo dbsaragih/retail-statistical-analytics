@@ -1,6 +1,6 @@
 """
 clean_data.py
-Applies the decision log in docs/02_data_quality_findings.md (T1-T12) to the
+Applies the decision log in docs/02_data_quality_findings.md (T1-T17) to the
 raw Online Retail II data and saves two analysis-ready tables:
 
     data/processed/sales_clean.parquet     product, shipping and other lines
@@ -28,6 +28,13 @@ VOUCHER_PREFIX = "gift_"
 
 BULK_QTY = 500                           # T9: about the 99.9th percentile of quantity (P8)
 LAST_COMPLETE_MONTH_END = "2011-12-01"   # T10: December 2011 has only 8 trading days
+
+# T15: country names standardised; placeholders treated as unknown
+COUNTRY_MAP = {"EIRE": "Ireland", "RSA": "South Africa", "USA": "United States"}
+UNKNOWN_COUNTRIES = {"Unspecified", "European Community"}
+
+# T16: price outlier band, relative to each product's median price
+PRICE_RATIO_HIGH, PRICE_RATIO_LOW = 5.0, 0.2
 
 
 class StepLog:
@@ -74,12 +81,20 @@ def remove_invalid_lines(df, log):
     return df
 
 
-def standardise(df):
-    """T12: clean types and codes."""
+def standardise(df, log):
+    """T12, T14, T15: clean types, codes, text and country names."""
     df = df.copy()
-    df["stock_code"] = df["stock_code"].str.strip()
+    df["stock_code"] = df["stock_code"].str.strip()                            # T12
     df["invoice"] = df["invoice"].str.strip()
     df["customer_id"] = df["customer_id"].astype("Int64")
+    df["description"] = (df["description"].str.strip()                         # T14
+                           .str.replace(r"\s+", " ", regex=True))
+    df = df.drop_duplicates()
+    log.record("T14 Remove duplicates revealed by text normalisation", df)
+
+    df["country"] = df["country"].replace(COUNTRY_MAP)                         # T15
+    df["country_known"] = ~df["country"].isin(UNKNOWN_COUNTRIES)
+    df["is_uk"] = df["country"] == "United Kingdom"
     return df
 
 
@@ -103,8 +118,9 @@ def add_product_names(df):
 
 
 def flag_cancelled_orders(sales, cancels):
-    """T5: match each cancellation to the latest earlier order with the same
-    customer, product and quantity (one-to-one), and flag that order."""
+    """T5, T17: match each cancellation to the latest earlier order with the same
+    customer, product and quantity (one-to-one). Flag the order as cancelled and
+    the cancellation as matched."""
     keys = ["customer_id", "stock_code", "abs_qty"]
     s = (sales.loc[sales["customer_id"].notna()]
               .assign(abs_qty=lambda x: x["quantity"])
@@ -112,26 +128,42 @@ def flag_cancelled_orders(sales, cancels):
               .sort_values("invoice_date"))
     c = (cancels.loc[cancels["customer_id"].notna()]
                 .assign(abs_qty=lambda x: -x["quantity"])
-                [["invoice_date"] + keys]
+                .reset_index()
+                .rename(columns={"index": "cancel_index"})
+                [["cancel_index", "invoice_date"] + keys]
                 .sort_values("invoice_date"))
     # merge_asof needs plain (non-nullable) key types
     for frame in (s, c):
         frame["customer_id"] = frame["customer_id"].astype("int64")
 
-    matched = pd.merge_asof(c, s, on="invoice_date", by=keys, direction="backward")
-    order_index = matched["index"].dropna().astype(int).drop_duplicates()
+    matched = (pd.merge_asof(c, s, on="invoice_date", by=keys, direction="backward")
+                 .dropna(subset=["index"])
+                 .drop_duplicates(subset=["index"]))
 
     sales = sales.copy()
-    sales["cancelled_exact"] = sales.index.isin(order_index)
-    match_rate = len(order_index) / max(len(c), 1)
-    return sales, match_rate
+    cancels = cancels.copy()
+    sales["cancelled_exact"] = sales.index.isin(matched["index"].astype(int))       # T5
+    cancels["cancellation_matched"] = cancels.index.isin(matched["cancel_index"])   # T17
+    match_rate = len(matched) / max(len(c), 1)
+    return sales, cancels, match_rate
+
+
+def flag_price_outliers(sales):
+    """T16: flag lines priced far from their product's median price."""
+    sales = sales.copy()
+    median = sales.groupby("stock_code")["price"].transform("median")
+    sales["price_ratio"] = sales["price"] / median
+    sales["is_price_outlier"] = ((sales["line_type"] == "product")
+                                 & ((sales["price_ratio"] > PRICE_RATIO_HIGH)
+                                    | (sales["price_ratio"] < PRICE_RATIO_LOW)))
+    return sales
 
 
 def add_flags_and_features(df):
     """T7, T9, T10, T11: flags and date features used by later notebooks."""
     df = df.copy()
     df["has_customer"] = df["customer_id"].notna()                          # T7
-    df["is_bulk"] = df["quantity"] > BULK_QTY                               # T9
+    df["is_bulk"] = df["quantity"].abs() > BULK_QTY                         # T9
     df["in_complete_month"] = df["invoice_date"] < LAST_COMPLETE_MONTH_END  # T10
     df["date"] = df["invoice_date"].dt.normalize()
     df["week_start"] = df["date"] - pd.to_timedelta(df["date"].dt.weekday, unit="D")
@@ -146,6 +178,7 @@ def reconcile(sales, cancels, match_rate):
     gross = sales.loc[product, "revenue"].sum()
     cancelled = -cancels.loc[cancels["line_type"] == "product", "revenue"].sum()
     shipping = sales.loc[sales["line_type"] == "shipping", "revenue"].sum()
+    outlier_rev = sales.loc[sales["is_price_outlier"], "revenue"].sum()
 
     print("\n--- Revenue reconciliation (GBP) ---")
     print(f"Gross product sales        £{gross:>14,.0f}")
@@ -157,23 +190,31 @@ def reconcile(sales, cancels, match_rate):
     print(sales["line_type"].value_counts().to_string())
 
     print("\n--- Flags ---")
-    print(f"Lines with a customer       {sales['has_customer'].mean():6.1%}")
-    print(f"Bulk lines (qty > {BULK_QTY})     {sales['is_bulk'].sum():>6,}")
-    print(f"Orders cancelled exactly    {sales['cancelled_exact'].sum():>6,}"
+    print(f"Lines with a customer         {sales['has_customer'].mean():6.1%}")
+    print(f"Lines from the UK             {sales['is_uk'].mean():6.1%}")
+    print(f"Lines with unknown country    {(~sales['country_known']).sum():>6,}")
+    print(f"Bulk lines (qty > {BULK_QTY})       {sales['is_bulk'].sum():>6,}")
+    print(f"Price outlier lines           {sales['is_price_outlier'].sum():>6,}"
+          f"  (£{outlier_rev:,.0f} gross, "
+          f"{sales.loc[sales['is_price_outlier'], 'cancelled_exact'].sum():,} later cancelled)")
+    print(f"Orders cancelled exactly      {sales['cancelled_exact'].sum():>6,}"
           f"  ({match_rate:.1%} of cancellations with a customer matched)")
-    print(f"Sales lines in Dec 2011     {(~sales['in_complete_month']).sum():>6,}")
+    print(f"Unmatched cancellation lines  {(~cancels['cancellation_matched']).sum():>6,}")
+    print(f"Sales lines in Dec 2011       {(~sales['in_complete_month']).sum():>6,}")
+
 
 def validate(sales, cancels, expected_total):
     """Output checks: every rule in the decision log must hold after cleaning.
     All checks run; the script stops with a list of failures if any fail."""
     product_cancels = cancels.loc[cancels["line_type"] == "product"]
+    desc = sales["description"].dropna()
     checks = [
-        ("C01 Sales + cancellations = rows after T4",
+        ("C01 Sales + cancellations = rows after cleaning",
          len(sales) + len(cancels) == expected_total),
-        ("C02 No exact duplicate sales lines (T1)",
+        ("C02 No exact duplicate sales lines (T1, T14)",
          not sales.duplicated(subset=["invoice", "stock_code", "description", "quantity",
-         "price", "invoice_date", "customer_id",
-         "country"]).any()),
+                                      "price", "invoice_date", "customer_id",
+                                      "country"]).any()),
         ("C03 No 'A' invoices remain (T2)",
          not sales["invoice"].str.startswith("A").any()
          and not cancels["invoice"].str.startswith("A").any()),
@@ -202,6 +243,12 @@ def validate(sales, cancels, expected_total):
          (sales.loc[~sales["in_complete_month"], "invoice_date"] >= LAST_COMPLETE_MONTH_END).all()),
         ("C15 Cancelled orders flagged only for known customers (T5)",
          sales.loc[sales["cancelled_exact"], "customer_id"].notna().all()),
+        ("C16 Descriptions have no edge or double spaces (T14)",
+         (desc == desc.str.strip()).all() and not desc.str.contains(r"\s{2,}").any()),
+        ("C17 No raw country variants remain (T15)",
+         not sales["country"].isin(COUNTRY_MAP.keys()).any()),
+        ("C18 Matched cancellations = cancelled orders (T5, T17)",
+         cancels["cancellation_matched"].sum() == sales["cancelled_exact"].sum()),
     ]
 
     print("--- Output checks ---")
@@ -211,18 +258,23 @@ def validate(sales, cancels, expected_total):
     # Soft checks: reported for monitoring, not enforced
     missing_names = sales.loc[sales["line_type"] == "product", "product_name"].isna().sum()
     print(f"INFO  Product lines without a product name: {missing_names:,}")
+    near_key = ["invoice", "stock_code", "quantity", "price", "invoice_date", "customer_id"]
+    near = sales.duplicated(subset=near_key)
+    print(f"INFO  Near-duplicate lines (same key, different description): {near.sum():,} "
+          f"(£{sales.loc[near, 'revenue'].sum():,.0f}), kept (T13)")
 
     failed = [name for name, passed in checks if not passed]
     if failed:
         raise AssertionError("Output checks failed: " + "; ".join(failed))
     print(f"All {len(checks)} output checks passed\n")
 
+
 def main():
     raw = load_raw()
     log = StepLog(raw)
 
     df = remove_invalid_lines(raw, log)
-    df = standardise(df)
+    df = standardise(df, log)
     df = classify_lines(df)
     df["revenue"] = df["quantity"] * df["price"]
 
@@ -233,7 +285,8 @@ def main():
     sales = add_product_names(sales)
     cancels = cancels.merge(sales[["stock_code", "product_name"]].drop_duplicates(),
                             on="stock_code", how="left")
-    sales, match_rate = flag_cancelled_orders(sales, cancels)
+    sales, cancels, match_rate = flag_cancelled_orders(sales, cancels)
+    sales = flag_price_outliers(sales)
     sales = add_flags_and_features(sales)
     cancels = add_flags_and_features(cancels)
 
