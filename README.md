@@ -23,8 +23,8 @@ analysis, forecasting, classification and anomaly detection.
 | 13. BQ7 Anomalies | Outliers, control charts, Isolation Forest | ⬜ Planned |
 | 14. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
 | 15. Findings | `docs/03_findings.md` with executive summary | ⬜ Planned |
-| 16. Client deliverable | Excel workbook (Google Sheets compatible) | ⬜ Planned |
-| 17. Presentation | Short deck | ⬜ Planned |
+| 16. Dashboard | Looker Studio report on Google Sheets summary tables | ⬜ Planned |
+| 17. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
 | 18. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
 
 ## Data and licence
