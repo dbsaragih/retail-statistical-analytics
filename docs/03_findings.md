@@ -84,3 +84,82 @@ yearly pattern and the Christmas closure built in (BQ6).
 | Trend with Q4 control | +14.6% | +14.6% |
 | Trend with month controls (p) | +2.1% (0.520) | +2.1% (0.520) |
 | Moving annual total change | +2.3% | +2.3% |
+## BQ3. What drives customer value and cancellations?
+
+Notebooks: [03_drivers_py.ipynb](../notebooks/03_drivers_py.ipynb) and [03_drivers_r.ipynb](../notebooks/03_drivers_r.ipynb).
+Both parts use an out-of-time design: features come from Year 1 (Dec 2009 to Nov 2010), and outcomes are measured in Year 2 (Dec 2010 to Nov 2011).
+
+### Part A: Customer value
+
+**Question.** Which Year 1 behaviours predict how much a customer spends in Year 2?
+
+**Data.** 4,227 Year 1 customers (12 dropped with no kept orders). 63.8% bought again in Year 2. Year 2 net revenue per customer is highly skewed: median £308, mean £1,544. The outcome is therefore modelled as log(1 + Year 2 net revenue).
+
+**Method.** Spearman correlation screen; predictors standardised (1 SD); multicollinearity checked with VIF (all below 3.4, none removed); OLS with HC3 robust standard errors.
+
+| Driver (per 1 SD in Year 1) | Effect on Year 2 value | p-value | Reading |
+|---|---|---|---|
+| Frequency (orders) | +362% | <0.001 | The dominant driver: repeat ordering is the best signal of future value |
+| Average order value | +83% | <0.001 | Bigger baskets carry forward |
+| Recency (days since last order) | −37% | <0.001 | Customers who went quiet late in Year 1 spend less |
+| Tenure (days since first order) | −17% | 0.003 | At the same frequency, newer customers order at a faster rate |
+| UK customer | −35% | 0.010 | International customers are worth more, consistent with wholesale buyers abroad |
+| Product variety | +8% | 0.218 | Not significant once frequency is controlled |
+| Cancellation share | −1% | 0.876 | Not significant; its raw correlation (0.28) only reflects that frequent buyers cancel more often |
+
+R² = 0.347 (adjusted 0.346). Effects are approximate percentage changes in (1 + Year 2 revenue).
+
+**Business reading.** Retention effort should be prioritised by frequency, recency and order value (an RFM view), which BQ4 develops into segments. A customer's cancellation history does not reduce their future value, so cancellations should not be used to downgrade otherwise active customers.
+
+### Part B: Cancellation risk
+
+**Question.** Which order-line characteristics make a cancellation more likely?
+
+**Data.** Product lines with a customer. Train: Year 1, 385,443 lines, cancellation rate 0.88%. Test: Year 2, 374,189 lines, cancellation rate 0.74%.
+
+**Method.** Logistic regression (odds ratios with Wald 95% CIs) and a depth-3 decision tree (balanced classes, at least 500 lines per leaf), both trained on Year 1 and evaluated on Year 2.
+
+| Factor | Odds ratio | 95% CI | Reading |
+|---|---|---|---|
+| Price outlier (more than 5x or less than 0.2x the item's normal price) | 17.79 | 13.01–24.33 | Mispriced lines are by far the strongest signal |
+| log(unit price) | 1.64 | 1.57–1.72 | Doubling the price raises the odds by about 41% |
+| log(quantity) | 1.09 | 1.05–1.13 | Doubling the quantity raises the odds by about 6% |
+| log(basket size) | 0.65 | 0.63–0.68 | Lines in larger baskets cancel less (about −25% per doubling) |
+| UK customer | 0.51 | 0.47–0.57 | Non-UK lines have about twice the odds of cancellation |
+| Q4 (Oct–Dec) | 0.80 | 0.74–0.86 | Peak-season lines cancel less |
+| Late hour | 1.15 | 1.04–1.28 | Slightly higher risk late in the day |
+| log(prior orders) | 1.01 | 0.98–1.04 | No effect |
+
+| Model (Year 2 test) | AUC | Gini | KS |
+|---|---|---|---|
+| Logistic regression | 0.677 | 0.355 | 0.261 |
+| Decision tree | 0.631 | 0.262 | 0.201 |
+
+The tree confirms the same drivers (rpart importance: price 46%, basket size 29%, quantity 17%, UK 8%). Its highest-risk segments in the training data:
+
+| Segment | Lines | Cancellation rate | vs. average (0.88%) |
+|---|---|---|---|
+| Lower price, larger basket, very large quantity | 1,085 | 5.1% | about 6x |
+| Lower price, smaller basket, non-UK | 12,147 | 2.2% | about 2.5x |
+| Higher unit price | 70,725 | 1.8% | about 2x |
+| Lower price, smaller basket, UK | 131,890 | 0.9% | about average |
+| Lower price, larger basket, normal quantity | 169,596 | 0.4% | less than half |
+
+**Business reading.**
+- Hypothesis "frequent customers are worth more": **confirmed**.
+- Hypothesis "large orders cancel more": **partly rejected**. Large quantities matter only at the extreme; larger baskets actually cancel less. Price, mispricing and non-UK customers are the stronger drivers.
+- A price check at order entry (flagging lines far from the item's normal price) would target the single biggest risk factor.
+- Predictive power is modest (AUC 0.68): line attributes rank risk but cannot predict individual cancellations. The model suits prioritising checks, not automatic decisions.
+
+### Python–R reconciliation (BQ3)
+
+| Result | Python | R |
+|---|---|---|
+| Customers used / bought again | 4,227 / 63.8% | 4,227 / 63.8% |
+| OLS coefficients, robust SE, R² | identical (R² 0.347) | identical |
+| Logistic odds ratios and CIs | identical | identical |
+| Logistic AUC / Gini / KS | 0.677 / 0.355 / 0.261 | 0.677 / 0.355 / 0.261 |
+| Tree splits | identical | identical |
+| Tree AUC / Gini / KS | 0.631 / 0.262 / 0.201 | 0.631 / 0.262 / 0.201 |
+
+Implementation notes: sklearn's `class_weight="balanced"` corresponds to rpart's `prior = c(0.5, 0.5)`. rpart needs `cp = -1` to keep splits whose two children predict the same class, as sklearn does; with `cp = 0` the tree was smaller and its test AUC fell to 0.619. Tree variable importance is defined differently in the two libraries (rpart includes surrogate splits), so importance shares differ slightly.

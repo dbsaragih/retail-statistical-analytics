@@ -15,9 +15,8 @@ analysis, forecasting, classification and anomaly detection.
 | 5. Data quality review | [docs/02_data_quality_findings.md](docs/02_data_quality_findings.md), decision log T1–T17 | ✅ Done |
 | 6. Data cleaning | [src/clean_data.py](src/clean_data.py) → `data/processed/`, 18 output checks | ✅ Done |
 | 7. R environment | [r/install_packages.R](r/install_packages.R), R Jupyter kernel | ✅ Done |
-| 8. BQ1–BQ2 Trend and seasonality | [Python](notebooks/02_trend_seasonality_py.ipynb), [R](notebooks/02_trend_seasonality_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-02_trend_seasonality_py.ipynb`, `_r.ipynb` | ⏳ In progress |
-| 9. BQ3 Drivers of value and cancellation | Regression and decision tree, Python and R | ⬜ Planned |
+| 8. BQ1–BQ2 Trend and seasonality | [Python](notebooks/02_trend_seasonality_py.ipynb), [R](notebooks/02_trend_seasonality_r.ipynb), [findings](docs/03_findings.md)| ✅ Done |
+| 9. BQ3: Drivers of value and cancellation | [Python](notebooks/03_drivers_py.ipynb), [R](notebooks/03_drivers_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 10. BQ4 Segmentation | Customer and product clustering, Python and R | ⬜ Planned |
 | 11. BQ5 Market basket | Association rules, Python and R | ⬜ Planned |
 | 12. BQ6 Forecasting and repeat purchase | SARIMAX, ETS, Prophet vs benchmark; classification model | ⬜ Planned |

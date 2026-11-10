@@ -1,0 +1,3 @@
+model,auc,gini,ks
+Logistic regression,0.6774,0.3548,0.2607
+Decision tree,0.6308,0.2616,0.2015
