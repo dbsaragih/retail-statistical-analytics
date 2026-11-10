@@ -19,9 +19,14 @@ pkgs <- c(
   "isotree", "qcc"
 )
 
+# Use the repository set in .Rprofile if there is one (e.g. pre-built Linux packages);
+# otherwise fall back to the main CRAN server
+repos <- getOption("repos")
+if (is.null(repos) || repos[["CRAN"]] %in% c("@CRAN@", "")) repos <- "https://cloud.r-project.org"
+
 missing <- setdiff(pkgs, rownames(installed.packages()))
 if (length(missing) > 0) {
-  install.packages(missing, repos = "https://cloud.r-project.org")
+  install.packages(missing, repos = repos)
 }
 cat("Installed:", length(pkgs) - length(setdiff(pkgs, rownames(installed.packages()))),
     "of", length(pkgs), "packages\n")
