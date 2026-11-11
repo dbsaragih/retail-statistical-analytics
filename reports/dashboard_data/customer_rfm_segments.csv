@@ -1,0 +1,7 @@
+rfm_segment,customers,customer_share,revenue,revenue_share,median_recency,median_frequency,median_monetary
+Champions,1087,0.254,5400466.23,0.6809,11.0,6.0,2128.83
+Loyal,814,0.1902,1065952.61,0.1344,38.0,3.0,817.795
+New or promising,333,0.0778,136092.74,0.0172,17.0,1.0,301.29
+Needs attention,334,0.078,148961.74,0.0188,51.0,1.0,324.52
+At risk,667,0.1558,737698.68,0.093,135.0,3.0,711.41
+Hibernating,1045,0.2442,442310.35,0.0558,225.0,1.0,253.05

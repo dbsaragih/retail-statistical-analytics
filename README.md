@@ -17,7 +17,7 @@ analysis, forecasting, classification and anomaly detection.
 | 7. R environment | [r/install_packages.R](r/install_packages.R), R Jupyter kernel | ✅ Done |
 | 8. BQ1–BQ2 Trend and seasonality | [Python](notebooks/02_trend_seasonality_py.ipynb), [R](notebooks/02_trend_seasonality_r.ipynb), [findings](docs/03_findings.md)| ✅ Done |
 | 9. BQ3: Drivers of value and cancellation | [Python](notebooks/03_drivers_py.ipynb), [R](notebooks/03_drivers_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-| 10. BQ4 Segmentation | Customer and product clustering, Python and R | ⬜ Planned |
+| 10. BQ4 Segmentation | [Python](notebooks/04_segmentation_py.ipynb), [R](notebooks/04_segmentation_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 11. BQ5 Market basket | Association rules, Python and R | ⬜ Planned |
 | 12. BQ6 Forecasting and repeat purchase | SARIMAX, ETS, Prophet vs benchmark; classification model | ⬜ Planned |
 | 13. BQ7 Anomalies | Outliers, control charts, Isolation Forest | ⬜ Planned |

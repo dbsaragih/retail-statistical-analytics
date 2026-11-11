@@ -163,3 +163,85 @@ The tree confirms the same drivers (rpart importance: price 46%, basket size 29%
 | Tree AUC / Gini / KS | 0.631 / 0.262 / 0.201 | 0.631 / 0.262 / 0.201 |
 
 Implementation notes: sklearn's `class_weight="balanced"` corresponds to rpart's `prior = c(0.5, 0.5)`. rpart needs `cp = -1` to keep splits whose two children predict the same class, as sklearn does; with `cp = 0` the tree was smaller and its test AUC fell to 0.619. Tree variable importance is defined differently in the two libraries (rpart includes surrogate splits), so importance shares differ slightly.
+
+## BQ4. Which customer and product segments exist, and how much does each bring?
+
+Notebooks: [04_segmentation_py.ipynb](../notebooks/04_segmentation_py.ipynb) and [04_segmentation_r.ipynb](../notebooks/04_segmentation_r.ipynb).
+Window: Year 2 (1 Dec 2010 to 30 Nov 2011). Net revenue = gross product sales minus product cancellations, rounded to the penny.
+
+### Part A: Customers
+
+4,293 identified customers bought in Year 2; 13 with net revenue of zero or less (everything cancelled) are excluded, leaving 4,280.
+
+**RFM segments** (recency, frequency and monetary value scored 1–5 by quintile):
+
+| Segment | Customers | Share of customers | Share of net revenue | Median days since last purchase | Median purchase days | Median net revenue |
+|---|---|---|---|---|---|---|
+| Champions | 1,087 | 25% | **68%** | 11 | 6 | £2,129 |
+| Loyal | 814 | 19% | 13% | 38 | 3 | £817 |
+| New or promising | 333 | 8% | 2% | 17 | 1 | £301 |
+| Needs attention | 334 | 8% | 2% | 51 | 1 | £325 |
+| At risk | 667 | 16% | 9% | 135 | 3 | £712 |
+| Hibernating | 1,045 | 24% | 5% | 225 | 1 | £253 |
+
+**K-means clusters** on log recency, frequency and monetary value (standardised). k = 2 to 8 were tested;
+k = 2 has the highest silhouette (0.43) but only separates active from lapsed customers. Among k ≥ 3, k = 4 has the
+best silhouette (0.34) and sits at the bend of the elbow curve, so k = 4 was chosen.
+
+| Cluster | Name | Customers | Share of net revenue | Median days since last purchase | Median purchase days | Median net revenue |
+|---|---|---|---|---|---|---|
+| 1 | VIP regulars | 17% | **65%** | 9 | 8 | £3,300 |
+| 2 | Mid-value, cooling | 29% | 24% | 55 | 3 | £1,180 |
+| 3 | Recent newcomers | 18% | 5% | 15 | 2 | £400 |
+| 4 | Lapsed one-timers | 35% | 6% | 179 | 1 | £270 |
+
+The clusters and the RFM rules broadly agree (cluster 1 is 95% Champions; cluster 4 is two-thirds Hibernating).
+K-means adds one insight: cluster 2 combines 421 of the 667 At-risk customers with 270 Champions. These are
+mid-value customers who are buying less often, the clearest win-back target.
+
+**Business reading.**
+- Revenue is highly concentrated: one customer in six (VIP regulars) brings in about two-thirds of net revenue. Protecting them (service, stock availability, account management) matters more than acquiring new low-value buyers.
+- Cluster 2 (£1.9m) is the main retention opportunity: a re-engagement campaign aimed at customers whose last order was one to four months ago.
+- Recent newcomers should be nurtured towards a second and third order; BQ3 showed that order frequency is the strongest predictor of next-year value.
+- Lapsed one-timers (35% of customers, 6% of revenue) justify only low-cost reactivation such as email.
+
+### Part B: Products
+
+**ABC classification** by net revenue:
+
+| Class | Products | Share of products | Share of net revenue | Median price | Median customers |
+|---|---|---|---|---|---|
+| A | 837 | 21% | 80% | £2.55 | 166 |
+| B | 979 | 25% | 15% | £1.65 | 64 |
+| C | 2,081 | 53% | 5% | £2.10 | 8 |
+
+**K-means clusters** (products with at least 20 orders) on log net revenue, log customers, log price and the
+October–December share of sales. k = 3 and k = 4 have almost the same silhouette (0.281 and 0.278); k = 4 was
+chosen because it separates seasonal products, which need their own stock planning.
+
+| Cluster | Name | Products | Share of net revenue | Median customers | Median price | Q4 share of sales |
+|---|---|---|---|---|---|---|
+| 1 | Core bestsellers | 31% | **78%** | 148 | £2.95 | 29% |
+| 2 | Seasonal (Christmas) lines | 17% | 10% | 57 | £2.08 | **75%** |
+| 3 | Low-price volume items | 29% | 9% | 55 | £0.83 | 25% |
+| 4 | Niche items | 23% | 4% | 17 | £2.95 | 29% |
+
+**Business reading.**
+- One product in five makes 80% of revenue; stock-outs of A-class products and core bestsellers carry the largest revenue risk.
+- More than half of the catalogue (C class) brings in 5% of revenue, a candidate for range rationalisation.
+- Seasonal lines sell three-quarters of their volume in October–December; buying for them must be committed well before Q4 (see the seasonality in BQ2).
+
+### Python–R reconciliation (BQ4)
+
+| Result | Python | R |
+|---|---|---|
+| Customers used | 4,280 | 4,280 |
+| RFM scores and segments | identical | identical |
+| Customer k-means, k = 4 within-cluster SS | 3,937.37 | 3,937.15 |
+| Customers in the same cluster | 99.6% | |
+| ABC classes | identical | identical |
+
+Implementation notes:
+- Net revenue is rounded to the penny before filtering. Without rounding, floating-point residue left two fully cancelled customers with a "positive" net revenue of about £0.000000000001 in Python, but exactly zero in R. That changed every customer's rank.
+- RFM ties are broken by customer ID, so the quintile scores are identical in both languages.
+- R's `kmeans()` (Hartigan–Wong algorithm) found a marginally better solution than scikit-learn (Lloyd's algorithm), so about 0.4% of borderline customers fall in a different cluster. The cluster profiles are practically the same.
