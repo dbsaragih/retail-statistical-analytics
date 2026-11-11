@@ -21,6 +21,7 @@ expect next, so it can plan stock, marketing and customer retention.
 | BQ5 | Which products are bought together? | Bundles, cross-selling, website recommendations | Strong pairs exist within product families (same design in different colours or sizes) | Association rules (Apriori / FP-Growth): support, confidence, lift |
 | BQ6 | What will weekly revenue be over the next quarter, and which customers will buy again? | Stock planning and retention campaigns | A seasonal model beats a naive benchmark; recent and frequent customers are most likely to return | SARIMA, ETS, Prophet vs seasonal naive; logistic regression, decision tree, gradient boosting |
 | BQ7 | Which transactions and days are unusual? | Fraud and data-quality controls, early warning | Unusual cases are concentrated in very large quantities, cancellations and non-product codes | Outlier analysis (IQR), control charts, Isolation Forest |
+| BQ8 | Are observed differences between customer groups real, and how should a future campaign be tested? | Which differences to act on; how to run a valid A/B test (e.g. a win-back email) | Differences in order value and cancellation rates between UK and international customers, and between seasons, are statistically significant; a win-back test needs a few hundred customers per group | Welch t-test, Mann–Whitney U, two-proportion z-test, chi-square, bootstrap confidence intervals; power analysis and sample-size planning |
 
 ## 3. Key definitions
 
@@ -36,6 +37,7 @@ To be confirmed during data profiling (docs/02).
 | Customer | A non-missing Customer ID; lines without one are used for sales trends and baskets, not for customer analysis |
 | Basket | The set of distinct products on one non-cancelled invoice |
 | Repeat buyer (BQ6) | A customer who purchases again within 90 days after a cut-off date |
+| A/B test (BQ8) | A randomised experiment comparing two versions; this dataset has none, so BQ8 tests observed (non-causal) differences and designs a future experiment |
 
 ## 4. Scope
 
@@ -56,7 +58,7 @@ To be confirmed during data profiling (docs/02).
 ## 6. Deliverables
 
 1. Data quality findings and decision log (docs/02)
-2. Analysis notebooks answering BQ1–BQ7 (notebooks/)
+2. Analysis notebooks answering BQ1–BQ8 (notebooks/)
 3. Findings document with an executive summary (docs/03)
 4. Short presentation deck
 

@@ -245,3 +245,81 @@ Implementation notes:
 - Net revenue is rounded to the penny before filtering. Without rounding, floating-point residue left two fully cancelled customers with a "positive" net revenue of about £0.000000000001 in Python, but exactly zero in R. That changed every customer's rank.
 - RFM ties are broken by customer ID, so the quintile scores are identical in both languages.
 - R's `kmeans()` (Hartigan–Wong algorithm) found a marginally better solution than scikit-learn (Lloyd's algorithm), so about 0.4% of borderline customers fall in a different cluster. The cluster profiles are practically the same.
+
+## BQ5. Which products are bought together?
+
+Notebooks: [05_market_basket_py.ipynb](../notebooks/05_market_basket_py.ipynb) and [05_market_basket_r.ipynb](../notebooks/05_market_basket_r.ipynb).
+
+**Data.** A basket is one Year 2 invoice (1 Dec 2010 to 30 Nov 2011) with the distinct products ordered; lines later
+cancelled with an exact match are removed. 18,837 baskets, 3,901 products. Baskets are large, as expected for a
+wholesale-heavy business: median 15 distinct products, mean 26; only 7.5% contain a single product, and about 600
+contain 100 or more.
+
+**Method.** Frequent itemsets (FP-Growth in Python, Apriori in R) and association rules `{A} → {B}` with support ≥ 1%
+(at least 189 baskets), confidence ≥ 30% and at most three products per rule.
+
+| Result | Value |
+|---|---|
+| Products in at least 1% of baskets | 814 |
+| Frequent itemsets | 1,933 (814 single, 863 pairs, 256 triples) |
+| Rules | 1,488 (731 with one product on the left, 757 with two) |
+| Distinct product pairs | 491 |
+| Lift | median 9.3, maximum 78.9 |
+| Confidence | median 51% |
+
+The most frequent single product is the WHITE HANGING HEART T-LIGHT HOLDER (11.3% of baskets), followed by JUMBO BAG
+RED RETROSPOT (10.8%) and REGENCY CAKESTAND 3 TIER (10.0%).
+
+**Strongest links (highest lift).** The HERB MARKER range (thyme, rosemary, parsley, basil, mint) dominates: any two
+markers appear together about 73–77 times more often than chance, and a customer who buys one marker buys a second
+in about 90% of cases. Customers buy the set, not single items.
+
+| Product A | Product B | Baskets with both | A → B | B → A | Lift |
+|---|---|---|---|---|---|
+| Herb marker thyme | Herb marker rosemary | 1.1% | 93% | 93% | 76.8 |
+| Set of 3 wooden tree decorations | Set of 3 wooden stocking decorations | 1.0% | 73% | 68% | 47.8 |
+| Regency tea plate green | Regency tea plate pink | 1.4% | 72% | 91% | 47.4 |
+| Regency sugar bowl green | Regency milk jug pink | 1.2% | 75% | 73% | 45.2 |
+| Jam jar with pink lid | Jam jar with green lid | 1.2% | 66% | 74% | 42.0 |
+| Childrens cutlery Dolly Girl | Childrens cutlery Spaceboy | 1.1% | 76% | 62% | 41.6 |
+
+**Most common combinations (highest support).**
+
+| Product A | Product B | Baskets with both | A → B | B → A | Lift |
+|---|---|---|---|---|---|
+| Jumbo bag pink polkadot | Jumbo bag red retrospot | 4.3% | 68% | 40% | 6.3 |
+| Green Regency teacup and saucer | Roses Regency teacup and saucer | 3.9% | 75% | 72% | 13.8 |
+| Jumbo storage bag Suki | Jumbo bag red retrospot | 3.7% | 61% | 34% | 5.6 |
+| Jumbo shopper vintage red paisley | Jumbo bag red retrospot | 3.5% | 58% | 32% | 5.4 |
+| Lunch bag red retrospot | Lunch bag Suki design | 3.4% | 42% | 51% | 6.4 |
+
+Confidence is not symmetric. 68% of baskets with the pink polkadot jumbo bag also contain the red retrospot one,
+but only 40% of red retrospot baskets contain the pink one: the red retrospot bag is the anchor product of the range.
+
+**Hypothesis.** "Strong pairs exist within product families (same design in different colours or sizes)":
+**confirmed**. Almost all top rules link variants of one range: herb markers, Regency teaware colours, jam jar lid
+colours, children's cutlery designs, jumbo and lunch bag prints, Christmas wooden decorations.
+
+**Business reading.**
+- **Bundles:** sell the herb markers as a set and the Regency teaware as mixed-colour sets; customers already buy them that way.
+- **"Complete the set" recommendations:** when a basket contains one variant, suggest the others in the range (for example pink polkadot jumbo bag → red retrospot, 68%).
+- **Stock planning:** variants of one range sell together, so a stock-out of one colour can hold back the whole order; replenish ranges together.
+- **Merchandising:** list range variants next to each other on the website and in the wholesale catalogue.
+
+**Limitations.** Association is not causation: a rule shows what is bought together, not that recommending B will
+increase sales (BQ8 sets out how to test that). The 1% support threshold hides rarer but possibly valuable
+combinations, and the large wholesale baskets raise co-occurrence for popular items.
+
+### Python–R reconciliation (BQ5)
+
+| Result | Python (mlxtend) | R (arules) |
+|---|---|---|
+| Baskets | 18,837 | 18,837 |
+| Rules | 1,488 | 1,488 |
+| Rules found by only one language | 0 | 0 |
+| Largest difference in support, confidence, lift | 5 × 10⁻⁷ (CSV rounding to 6 decimals) | |
+| Largest difference in basket count | 0 | |
+
+Implementation notes: `mlxtend` can produce rules with several products on the right-hand side, while `arules` always
+has one, so Python keeps single-product consequents only. Rules are matched by a key of stock codes sorted in C-locale
+order, which is the same in both languages.

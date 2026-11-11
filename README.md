@@ -2,7 +2,8 @@
 
 End-to-end statistical analysis of two years of transactions from a UK online
 gift retailer: trends, seasonality, drivers, segmentation, market-basket
-analysis, forecasting, classification and anomaly detection.
+analysis, forecasting, classification, anomaly detection, hypothesis testing
+and experiment design.
 
 ## Progress
 
@@ -18,14 +19,15 @@ analysis, forecasting, classification and anomaly detection.
 | 8. BQ1–BQ2 Trend and seasonality | [Python](notebooks/02_trend_seasonality_py.ipynb), [R](notebooks/02_trend_seasonality_r.ipynb), [findings](docs/03_findings.md)| ✅ Done |
 | 9. BQ3: Drivers of value and cancellation | [Python](notebooks/03_drivers_py.ipynb), [R](notebooks/03_drivers_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 10. BQ4 Segmentation | [Python](notebooks/04_segmentation_py.ipynb), [R](notebooks/04_segmentation_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-| 11. BQ5 Market basket | Association rules, Python and R | ⬜ Planned |
+| 11. BQ5 Market basket | [Python](notebooks/05_market_basket_py.ipynb), [R](notebooks/05_market_basket_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 12. BQ6 Forecasting and repeat purchase | SARIMAX, ETS, Prophet vs benchmark; classification model | ⬜ Planned |
 | 13. BQ7 Anomalies | Outliers, control charts, Isolation Forest | ⬜ Planned |
-| 14. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
-| 15. Findings | [docs/03_findings.md](docs/03_findings.md), BQ1–BQ2 written; executive summary at the end | ⏳ In progress |
-| 16. Dashboard | Looker Studio report on Google Sheets summary tables | ⬜ Planned |
-| 17. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
-| 18. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
+| 14. BQ8 Hypothesis testing and experiment design | Group comparison tests, bootstrap intervals, A/B test sample-size plan | ⬜ Planned |
+| 15. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
+| 16. Findings | [docs/03_findings.md](docs/03_findings.md), BQ1–BQ2 written; executive summary at the end | ⏳ In progress |
+| 17. Dashboard | Looker Studio report on Google Sheets summary tables | ⬜ Planned |
+| 18. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
+| 19. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
 
 ## Data and licence
 
