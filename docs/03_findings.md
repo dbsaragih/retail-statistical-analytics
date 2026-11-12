@@ -411,7 +411,8 @@ explain and to score in a spreadsheet. In the boosting model, frequency, recency
 76% of the total gain; variety 12%, cancellation share 6%, tenure 5% and UK 0%.
 
 The decision tree uses the same signals: customers with more than about 2.5 purchase days who bought within the last
-~110 days are classed as returning; one-time buyers return only if they bought a wide range of products.
+~110 days are classed as returning; customers with one or two purchase days are classed as returning only if they
+bought a wide range of products (more than about 45).
 
 **Gains (2011 test, ranked by the logistic score):**
 

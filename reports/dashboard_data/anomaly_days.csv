@@ -1,0 +1,8 @@
+date,weekday,net,expected,resid,z,flag_z,flag_chart,flag_iqr
+2009-12-23,Wednesday,10557.15,35149.8567,-1.2028,-3.3052,True,True,False
+2010-01-06,Wednesday,8733.0,23854.5275,-1.0049,-2.7612,False,True,False
+2010-09-27,Monday,97369.98,32712.1553,1.0908,2.9973,False,True,False
+2010-12-22,Wednesday,4791.17,32530.862,-1.9154,-5.2633,True,True,True
+2010-12-23,Thursday,10942.49,39361.5867,-1.2801,-3.5176,True,True,False
+2011-02-06,Sunday,3439.67,10453.9295,-1.1116,-3.0545,True,True,False
+2011-03-13,Sunday,4058.64,12547.88,-1.1287,-3.1015,True,True,False

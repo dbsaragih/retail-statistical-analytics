@@ -1,0 +1,3 @@
+,invoices,median_value,median_lines,has_nonproduct,has_cancelled,has_bulk_line,has_price_outlier,no_customer,non_uk
+Flagged (top 1%),393,311.99,1.0,0.9771,0.2316,0.0051,0.0738,0.402,0.4911
+All other invoices,38864,302.2,15.0,0.101,0.0802,0.0133,0.0344,0.0748,0.0843
