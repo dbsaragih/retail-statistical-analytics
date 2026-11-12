@@ -335,9 +335,12 @@ The last 13 weeks (5 Sep to 28 Nov 2011) are held out as a test quarter; models 
 Two dummies mark the partly open and the closed Christmas weeks.
 
 **Models.** Naive (last value), seasonal naive (same week last year, the benchmark), Fourier regression (trend,
-Christmas dummies and K yearly sine/cosine pairs) and the same regression with AR(1) errors. K was chosen by AIC:
-K = 10, the largest value tested. ETS and 52-week seasonal ARIMA were not used, because two yearly cycles are too
-few to estimate them reliably.
+Christmas dummies and K yearly sine/cosine pairs), the same regression with AR(1) errors (SARIMAX with Fourier
+regressors) and Prophet (piecewise-linear trend with changepoints, 10 yearly Fourier pairs and the Christmas dummies).
+K was chosen by AIC: K = 10, the largest value tested.
+
+ETS and 52-week seasonal ARIMA were not used: two yearly cycles are too few to estimate them reliably. R's `ets()`
+refuses seasonal periods above 24, and decomposing first (STL, then ETS) fails because STL needs more than two cycles.
 
 | Model (test quarter) | MAE (£k/week) | RMSE | MAPE | WAPE | Bias |
 |---|---|---|---|---|---|
@@ -345,21 +348,23 @@ few to estimate them reliably.
 | Seasonal naive (benchmark) | 42.7 | 52.9 | 18.0% | 15.7% | −4.5% |
 | Fourier regression | **40.3** | **50.4** | **16.5%** | **14.8%** | −5.1% |
 | Fourier + AR(1) errors | 40.3 | 50.5 | 16.5% | 14.8% | −5.1% |
+| Prophet | **40.3** | **50.4** | **16.5%** | **14.8%** | −5.1% |
 
 **Reading.**
 - Seasonality is everything here: any model that knows last year's shape (seasonal naive or Fourier) cuts the error by about two-thirds compared with the naive forecast, which misses the autumn ramp-up completely.
 - The Fourier regression beats the seasonal naive benchmark, but only slightly (WAPE 14.8% vs 15.7%; MAE about 6% lower). With only two years of history, a 10-term Fourier curve mostly reproduces last year's seasonal shape, smoothed. The extra modelling buys little accuracy over "same week last year".
 - The AR(1) error term adds nothing: week-to-week deviations from the seasonal pattern are hardly autocorrelated (AR coefficient −0.17 on the full series), so Fourier regression and Fourier + AR(1) give almost identical forecasts.
+- Prophet lands on practically the same forecasts as the Fourier regression (within £0.1k per week). This is expected: its yearly seasonality is the same 10-pair Fourier series, and with less than two years of data its changepoint mechanism finds no meaningful trend breaks. Prophet's convenience (holidays, changepoints) pays off with longer histories, not here.
 - All models under-forecast the test quarter by about 5%: autumn 2011 ran slightly above autumn 2010.
 
 **Next-quarter forecast** (Fourier + AR(1), refitted on all 104 weeks):
 
-| Period | Forecast | Seasonal naive |
-|---|---|---|
-| Dec 2011 (4 weeks from 5 Dec) | £601k | £581k |
-| Jan 2012 (5 weeks from 2 Jan) | £733k | £677k |
-| Feb 2012 (4 weeks from 6 Feb) | £554k | £508k |
-| **Total, 13 weeks** | **£1,888k** | £1,766k |
+| Period | Forecast | Prophet | Seasonal naive |
+|---|---|---|---|
+| Dec 2011 (4 weeks from 5 Dec) | £601k | £605k | £581k |
+| Jan 2012 (5 weeks from 2 Jan) | £733k | £726k | £677k |
+| Feb 2012 (4 weeks from 6 Feb) | £554k | £553k | £508k |
+| **Total, 13 weeks** | **£1,888k** | £1,883k | £1,766k |
 
 Weekly 95% prediction intervals are about ±£50k. For the closed Christmas week the lower limit falls below zero and
 should be read as zero.
@@ -395,11 +400,18 @@ from 1 Sep to 29 Nov 2010) and tested on the same windows one year later.
 |---|---|---|---|---|
 | Logistic regression | 0.748 | 0.495 | 0.384 | 0.201 |
 | Decision tree | 0.724 | 0.448 | 0.358 | 0.208 |
+| Gradient boosting (XGBoost) | 0.740 | 0.479 | 0.372 | 0.204 |
 | Always predicting the base rate | 0.500 | 0 | 0 | 0.246 |
 
+Gradient boosting (300 trees of depth 3, learning rate 0.05, settings fixed in advance) does **not** beat logistic
+regression on the 2011 test set (AUC 0.740 vs 0.748). The relationships are close to monotonic (more frequent, broader
+buyers return more), which a linear model on log features already captures; the extra flexibility of boosting does not
+generalise to the following year. Logistic regression is therefore the recommended model: it is also the easiest to
+explain and to score in a spreadsheet. In the boosting model, frequency, recency and order value together carry about
+76% of the total gain; variety 12%, cancellation share 6%, tenure 5% and UK 0%.
+
 The decision tree uses the same signals: customers with more than about 2.5 purchase days who bought within the last
-~110 days are classed as returning; customers with one or two purchase days are classed as returning only if they
-bought a wide range of products (more than about 45).
+~110 days are classed as returning; one-time buyers return only if they bought a wide range of products.
 
 **Gains (2011 test, ranked by the logistic score):**
 
@@ -424,11 +436,14 @@ bought a wide range of products (more than about 45).
 | Fourier + AR(1) accuracy (`SARIMAX` vs `arima`) | MAE 40.31 | about 40.3 | 0.047 |
 | Logistic odds ratios | identical | identical | 3.5 × 10⁻⁵ |
 | Logistic AUC / tree AUC | 0.7476 / 0.7240 | 0.7476 / 0.7240 | 0 |
+| Prophet accuracy | MAE 40.27 | MAE 40.27 | < 0.0001 |
+| Gradient boosting AUC (XGBoost) | 0.7396 | 0.7396 | 0 |
 | Gains table, buyers per decile | identical | identical | 0 |
 
 The ARIMA-error model is estimated by numerical maximum likelihood with different optimisers in statsmodels and R,
 so small differences are expected; the regression benchmarks and the logistic model are closed-form or converge to
-the same solution and agree exactly.
+the same solution and agree exactly. Prophet (Stan) and XGBoost run the same underlying libraries in both languages;
+with deterministic settings (exact tree method, no sampling, one thread) they agree to four decimals.
 
 **Limitations.** Two years of weekly data (two Christmas seasons) limit any forecasting model; AIC chose the largest
 K tested, a sign that the seasonal shape is learned largely from a single previous year. The repeat-purchase model
