@@ -4,6 +4,8 @@ data/
 # ── Secrets and local settings ───────────────────────
 .env
 .vscode/
+.secrets/
+service_account*.json
 
 # ── Python ───────────────────────────────────────────
 __pycache__/
