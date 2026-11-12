@@ -323,3 +323,113 @@ combinations, and the large wholesale baskets raise co-occurrence for popular it
 Implementation notes: `mlxtend` can produce rules with several products on the right-hand side, while `arules` always
 has one, so Python keeps single-product consequents only. Rules are matched by a key of stock codes sorted in C-locale
 order, which is the same in both languages.
+
+## BQ6. What will weekly revenue be next quarter, and which customers will buy again?
+
+Notebooks: [06_forecast_repeat_py.ipynb](../notebooks/06_forecast_repeat_py.ipynb) and [06_forecast_repeat_r.ipynb](../notebooks/06_forecast_repeat_r.ipynb).
+
+### Part A: Weekly revenue forecast
+
+**Data and design.** 104 complete weeks of net revenue (7 Dec 2009 to 28 Nov 2011, £ thousand), closed weeks set to 0.
+The last 13 weeks (5 Sep to 28 Nov 2011) are held out as a test quarter; models are trained on the 91 weeks before.
+Two dummies mark the partly open and the closed Christmas weeks.
+
+**Models.** Naive (last value), seasonal naive (same week last year, the benchmark), Fourier regression (trend,
+Christmas dummies and K yearly sine/cosine pairs) and the same regression with AR(1) errors. K was chosen by AIC:
+K = 10, the largest value tested. ETS and 52-week seasonal ARIMA were not used, because two yearly cycles are too
+few to estimate them reliably.
+
+| Model (test quarter) | MAE (£k/week) | RMSE | MAPE | WAPE | Bias |
+|---|---|---|---|---|---|
+| Naive | 134.8 | 146.2 | 47.2% | 49.6% | −49.6% |
+| Seasonal naive (benchmark) | 42.7 | 52.9 | 18.0% | 15.7% | −4.5% |
+| Fourier regression | **40.3** | **50.4** | **16.5%** | **14.8%** | −5.1% |
+| Fourier + AR(1) errors | 40.3 | 50.5 | 16.5% | 14.8% | −5.1% |
+
+**Reading.**
+- Seasonality is everything here: any model that knows last year's shape (seasonal naive or Fourier) cuts the error by about two-thirds compared with the naive forecast, which misses the autumn ramp-up completely.
+- The Fourier regression beats the seasonal naive benchmark, but only slightly (WAPE 14.8% vs 15.7%; MAE about 6% lower). With only two years of history, a 10-term Fourier curve mostly reproduces last year's seasonal shape, smoothed. The extra modelling buys little accuracy over "same week last year".
+- The AR(1) error term adds nothing: week-to-week deviations from the seasonal pattern are hardly autocorrelated (AR coefficient −0.17 on the full series), so Fourier regression and Fourier + AR(1) give almost identical forecasts.
+- All models under-forecast the test quarter by about 5%: autumn 2011 ran slightly above autumn 2010.
+
+**Next-quarter forecast** (Fourier + AR(1), refitted on all 104 weeks):
+
+| Period | Forecast | Seasonal naive |
+|---|---|---|
+| Dec 2011 (4 weeks from 5 Dec) | £601k | £581k |
+| Jan 2012 (5 weeks from 2 Jan) | £733k | £677k |
+| Feb 2012 (4 weeks from 6 Feb) | £554k | £508k |
+| **Total, 13 weeks** | **£1,888k** | £1,766k |
+
+Weekly 95% prediction intervals are about ±£50k. For the closed Christmas week the lower limit falls below zero and
+should be read as zero.
+
+**Hypothesis.** "A seasonal model beats a naive benchmark": **confirmed against the naive forecast; only marginally
+against the seasonal naive benchmark.** For planning, the practical recommendation is to start from last year's
+weekly profile and adjust it for the recent year-on-year trend; a more complex model becomes worthwhile once three
+or more years of history are available.
+
+### Part B: Repeat purchase within 90 days
+
+**Design.** Out-of-time: the model is trained on customers active from Dec 2009 to Aug 2010 (outcome: a kept purchase
+from 1 Sep to 29 Nov 2010) and tested on the same windows one year later.
+
+| Set | Customers | Bought again within 90 days |
+|---|---|---|
+| Train (2010) | 3,287 | 58.4% |
+| Test (2011) | 3,305 | 56.1% |
+
+**Logistic regression** (odds ratio per one standard deviation, trained on 2010):
+
+| Feature | Odds ratio | 95% CI | p-value | Reading |
+|---|---|---|---|---|
+| Frequency (purchase days) | **2.31** | 1.97–2.72 | <0.001 | The dominant driver |
+| Variety (distinct products) | 1.22 | 1.09–1.35 | <0.001 | Broader buyers return more |
+| Average order value | 1.13 | 1.03–1.23 | 0.009 | Slightly positive |
+| Tenure | 0.88 | 0.78–0.99 | 0.028 | At equal frequency, newer customers are more active |
+| Recency | 0.94 | 0.83–1.06 | 0.289 | Not significant once frequency is included |
+| Cancellation share | 0.94 | 0.87–1.01 | 0.091 | Not significant |
+| UK customer | 0.96 | 0.71–1.28 | 0.762 | No difference |
+
+| Model (2011 test) | AUC | Gini | KS | Brier score |
+|---|---|---|---|---|
+| Logistic regression | 0.748 | 0.495 | 0.384 | 0.201 |
+| Decision tree | 0.724 | 0.448 | 0.358 | 0.208 |
+| Always predicting the base rate | 0.500 | 0 | 0 | 0.246 |
+
+The decision tree uses the same signals: customers with more than about 2.5 purchase days who bought within the last
+~110 days are classed as returning; customers with one or two purchase days are classed as returning only if they
+bought a wide range of products (more than about 45).
+
+**Gains (2011 test, ranked by the logistic score):**
+
+| Decile | Customers | Bought again | Buy rate | Cumulative share of buyers |
+|---|---|---|---|---|
+| 1 (highest score) | 330 | 318 | 96% | 17% |
+| 2 | 331 | 275 | 83% | 32% |
+| 3 | 330 | 251 | 76% | 46% |
+| 4–7 | 1,322 | 676 | 51% | 82% |
+| 8–10 (lowest score) | 992 | 333 | 34% | 100% |
+
+**Reading.**
+- Hypothesis "recent and frequent customers are most likely to return": **frequency confirmed; recency is not significant on its own** once purchase frequency is known (frequent buyers are almost always recent too).
+- The model ranks well and holds up one year later (AUC 0.75 on 2011 after training on 2010). The top 30% of customers by score buy again at 76–96%.
+- For a retention budget: the top deciles will mostly return without help, so campaign spend is better aimed at the middle deciles (4–7, buy rate about 50%), where a nudge can change the outcome. The bottom deciles (about 30%) are lower priority. Whether a campaign actually changes behaviour must be tested with a controlled experiment (BQ8).
+
+### Python–R reconciliation (BQ6)
+
+| Result | Python | R | Largest difference |
+|---|---|---|---|
+| Naive, seasonal naive, Fourier regression accuracy | identical | identical | < 0.0001 |
+| Fourier + AR(1) accuracy (`SARIMAX` vs `arima`) | MAE 40.31 | about 40.3 | 0.047 |
+| Logistic odds ratios | identical | identical | 3.5 × 10⁻⁵ |
+| Logistic AUC / tree AUC | 0.7476 / 0.7240 | 0.7476 / 0.7240 | 0 |
+| Gains table, buyers per decile | identical | identical | 0 |
+
+The ARIMA-error model is estimated by numerical maximum likelihood with different optimisers in statsmodels and R,
+so small differences are expected; the regression benchmarks and the logistic model are closed-form or converge to
+the same solution and agree exactly.
+
+**Limitations.** Two years of weekly data (two Christmas seasons) limit any forecasting model; AIC chose the largest
+K tested, a sign that the seasonal shape is learned largely from a single previous year. The repeat-purchase model
+uses only transaction history (no marketing contacts or website behaviour).

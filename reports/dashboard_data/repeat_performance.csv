@@ -1,0 +1,4 @@
+model,auc,gini,ks,brier
+Logistic regression,0.7476,0.4953,0.384,0.201
+Decision tree,0.724,0.448,0.3582,0.2083
+Gradient boosting,0.7396,0.4792,0.372,0.2037

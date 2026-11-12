@@ -20,7 +20,7 @@ and experiment design.
 | 9. BQ3: Drivers of value and cancellation | [Python](notebooks/03_drivers_py.ipynb), [R](notebooks/03_drivers_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 10. BQ4 Segmentation | [Python](notebooks/04_segmentation_py.ipynb), [R](notebooks/04_segmentation_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 11. BQ5 Market basket | [Python](notebooks/05_market_basket_py.ipynb), [R](notebooks/05_market_basket_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-| 12. BQ6 Forecasting and repeat purchase | SARIMAX, ETS, Prophet vs benchmark; classification model | ⬜ Planned |
+| 12. BQ6 Forecasting and repeat purchase | [Python](notebooks/06_forecast_repeat_py.ipynb), [R](notebooks/06_forecast_repeat_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 13. BQ7 Anomalies | Outliers, control charts, Isolation Forest | ⬜ Planned |
 | 14. BQ8 Hypothesis testing and experiment design | Group comparison tests, bootstrap intervals, A/B test sample-size plan | ⬜ Planned |
 | 15. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
