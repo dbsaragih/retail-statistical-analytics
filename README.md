@@ -21,7 +21,7 @@ and experiment design.
 | 10. BQ4 Segmentation | [Python](notebooks/04_segmentation_py.ipynb), [R](notebooks/04_segmentation_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 11. BQ5 Market basket | [Python](notebooks/05_market_basket_py.ipynb), [R](notebooks/05_market_basket_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 12. BQ6 Forecasting and repeat purchase | [Python](notebooks/06_forecast_repeat_py.ipynb), [R](notebooks/06_forecast_repeat_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-| 13. BQ7 Anomalies | Outliers, control charts, Isolation Forest | ⬜ Planned |
+| 13. BQ7 Anomalies | [Python](notebooks/07_anomalies_py.ipynb), [R](notebooks/07_anomalies_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 14. BQ8 Hypothesis testing and experiment design | Group comparison tests, bootstrap intervals, A/B test sample-size plan | ⬜ Planned |
 | 15. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
 | 16. Findings | [docs/03_findings.md](docs/03_findings.md), BQ1–BQ2 written; executive summary at the end | ⏳ In progress |

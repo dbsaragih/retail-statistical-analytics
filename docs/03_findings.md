@@ -411,8 +411,7 @@ explain and to score in a spreadsheet. In the boosting model, frequency, recency
 76% of the total gain; variety 12%, cancellation share 6%, tenure 5% and UK 0%.
 
 The decision tree uses the same signals: customers with more than about 2.5 purchase days who bought within the last
-~110 days are classed as returning; customers with one or two purchase days are classed as returning only if they
-bought a wide range of products (more than about 45).
+~110 days are classed as returning; one-time buyers return only if they bought a wide range of products.
 
 **Gains (2011 test, ranked by the logistic score):**
 
@@ -449,3 +448,88 @@ with deterministic settings (exact tree method, no sampling, one thread) they ag
 **Limitations.** Two years of weekly data (two Christmas seasons) limit any forecasting model; AIC chose the largest
 K tested, a sign that the seasonal shape is learned largely from a single previous year. The repeat-purchase model
 uses only transaction history (no marketing contacts or website behaviour).
+
+## BQ7. Which days and transactions are unusual?
+
+Notebooks: [07_anomalies_py.ipynb](../notebooks/07_anomalies_py.ipynb) and [07_anomalies_r.ipynb](../notebooks/07_anomalies_r.ipynb).
+Period: 1 Dec 2009 to 30 Nov 2011.
+
+### Part A: Unusual days
+
+**Method.** Daily net revenue on 596 trading days is compared with its expected level from
+`log(net revenue) ~ weekday + year-month` (R² 0.53). The residual is the day's deviation from that level; its standard
+deviation is 0.36 (a typical day lies within about ±40% of expected). Three rules flag unusual days: |z| > 3, an
+individuals (I-MR) control chart with limits at mean ± 2.66 × average moving range (±1.00), and IQR fences at
+Q1 − 3·IQR and Q3 + 3·IQR.
+
+| Rule | Days flagged |
+|---|---|
+| z-score beyond ±3 | 5 |
+| Control chart | 7 |
+| IQR fences | 1 |
+| Any rule | 7 (1.2% of trading days) |
+
+| Date | Weekday | Net revenue | Expected | Deviation | Likely explanation |
+|---|---|---|---|---|---|
+| 22 Dec 2010 | Wed | £4.8k | £32.5k | −85% | Last days before the Christmas closure |
+| 23 Dec 2010 | Thu | £10.9k | £39.4k | −72% | Last days before the Christmas closure |
+| 23 Dec 2009 | Wed | £10.6k | £35.1k | −70% | Last days before the Christmas closure |
+| 13 Mar 2011 | Sun | £4.1k | £12.5k | −68% | Weak Sunday |
+| 6 Feb 2011 | Sun | £3.4k | £10.5k | −67% | Weak Sunday |
+| 27 Sep 2010 | Mon | £97.4k | £32.7k | +198% | One very high day, consistent with exceptionally large wholesale orders |
+| 6 Jan 2010 | Wed | £8.7k | £23.9k | −63% | Slow restart after the New Year closure |
+
+**Reading.** Once the weekday and the month are accounted for, daily revenue is very regular: only 7 days in two
+years fall outside the control limits, and five of them have calendar explanations (the wind-down before the
+Christmas closure, the restart after it, and two quiet Sundays). They show the limits of a monthly model rather than
+operational problems. 27 September 2010 is the only clearly positive anomaly and is worth checking against the order
+book.
+
+### Part B: Unusual invoices
+
+**Method.** 39,257 sales invoices (including postage, fees and manual adjustments) are described by ten features:
+number of lines, quantity, value, average price, non-product share of value, largest price deviation from the
+product's normal price, share later cancelled, customer ID present, UK and hour. An **Isolation Forest** (200 trees,
+256 invoices per tree) scores every invoice; the most anomalous 1% (393 invoices) are flagged.
+
+| Share of invoices with… | Flagged (top 1%) | All other invoices |
+|---|---|---|
+| A non-product line (postage, fee, adjustment) | **97.7%** | 10.1% |
+| A line later cancelled | **23.2%** | 8.0% |
+| No customer ID | **40.2%** | 7.5% |
+| A non-UK customer | **49.1%** | 8.4% |
+| A price outlier (more than 5× from normal) | 7.4% | 3.4% |
+| A bulk line (500+ units) | 0.5% | 1.3% |
+| Median lines per invoice | 1 | 15 |
+| Median value | £312 | £302 |
+
+The ten most anomalous invoices share one pattern: a **single non-product line worth £560–£7,000, for a non-UK customer,
+later reversed in full** (cancelled share 100%).
+
+Univariate IQR fences flag different invoices: 302 by value (mostly very large wholesale orders) and 7 by quantity;
+only 10 of them are also in the Isolation Forest top 1%. Size alone is not unusual for this business; unusual
+*composition* is.
+
+**Hypothesis.** "Unusual cases are concentrated in very large quantities, cancellations and non-product codes":
+**confirmed for non-product codes and cancellations; rejected for very large quantities.** Bulk lines are actually
+less common among the flagged invoices than among normal ones, because large wholesale orders are routine here.
+
+**Business reading.**
+- **Control point:** single-line invoices consisting only of non-product codes (manual adjustments, fees, postage), especially for non-UK or unidentified customers and when later reversed, are the clearest anomaly pattern. A monthly review list of such entries is a simple, targeted finance control.
+- **Data quality:** 40% of flagged invoices have no customer ID, against 7.5% of normal invoices; capturing the customer on manual entries would make them traceable.
+- **Monitoring:** the daily control chart can run as a weekly check, with known calendar effects (Christmas wind-down, quiet Sundays) added to the expected level so that alerts point to genuine surprises.
+
+### Python–R reconciliation (BQ7)
+
+| Result | Python | R |
+|---|---|---|
+| Trading days | 596 | 596 |
+| Residuals and z-scores | identical (largest difference 5 × 10⁻⁵, CSV rounding) | identical |
+| Flagged days | 7 | 7 (same dates) |
+| Isolation Forest scores | scikit-learn | `isotree` (`ndim = 1`) |
+| Rank correlation of scores | 0.989 | |
+| Top 1% flagged by both | 349 of 393 (89%) | |
+
+Isolation Forest builds random trees, and scikit-learn and `isotree` use different random number generators and
+implementation details, so individual scores differ. The near-perfect rank correlation and the 89% overlap of the
+flagged invoices show that both identify the same anomaly pattern.
