@@ -1,11 +1,39 @@
 # 03 Findings
 
-Analysis notebooks: `notebooks/02_trend_seasonality_py.ipynb` and
-`notebooks/02_trend_seasonality_r.ipynb`. Both produce identical results.
+Analysis notebooks: one Python and one R notebook per business question in `notebooks/` (02–08).
+Python and R give the same results; see [04_reconciliation.md](04_reconciliation.md).
 Revenue is net product revenue (gross product sales − product cancellations).
 Year 1 = Dec 2009 – Nov 2010, Year 2 = Dec 2010 – Nov 2011.
 
-The executive summary will be written once all seven business questions are answered.
+## Executive summary
+
+A UK online giftware wholesaler sold £9.3M net in Year 2, to about 4,300 identified customers in some 40 countries.
+Two years of transactions (one million order lines) answer eight business questions.
+
+| # | Question | Answer |
+|---|---|---|
+| BQ1 | How is the business trending? | **Flat.** Net revenue +1.9% year on year, not statistically different from zero once seasonality is controlled. Fewer orders (−3.9%) but larger ones (+5.9% per order) |
+| BQ2 | What repeats? | **One strong yearly peak.** Sep–Nov brings 36–38% of annual revenue, November alone about 15%. Trading follows a business week (closed Saturdays) and office hours |
+| BQ3 | What drives value and cancellations? | **Order frequency** is the strongest predictor of next-year value. Cancellations are driven by **mispricing** (odds ×17.8), higher prices and non-UK customers, not by large orders |
+| BQ4 | Which segments exist? | **17% of customers bring 65% of revenue** (VIP regulars). A "mid-value, cooling" group (29% of customers, £1.9M) is the main retention opportunity. 21% of products make 80% of revenue |
+| BQ5 | What is bought together? | **Variants of the same range**: herb markers (lift up to 79), Regency teaware colours, jumbo bag prints. Bundles and "complete the set" offers fit how customers already buy |
+| BQ6 | What comes next? | **Next quarter ≈ £1.9M** (Dec 2011 – Feb 2012). With two years of data, models beat "same week last year" only marginally (WAPE 14.8% vs 15.7%). Repeat purchase is predictable (AUC 0.75 one year ahead) |
+| BQ7 | What is unusual? | **Few anomalous days** (7 of 596, mostly calendar effects). Unusual invoices are single-line **manual non-product entries**, often for non-UK or unidentified customers and later reversed |
+| BQ8 | Are differences real, and how to test a campaign? | Non-UK orders are **1.6× larger** and Q4 cancellations **25% lower** (both significant). A win-back email A/B test needs **about 1,500 customers per group** to detect a 5-point lift |
+
+### Recommendations
+
+1. **Protect the VIP regulars** (17% of customers, 65% of revenue): stock availability for A-class and core bestseller products, and account-level service.
+2. **Win back mid-value, cooling customers** (BQ4 cluster 2) and nurture newcomers towards a second and third order; frequency drives future value (BQ3, BQ6). Prove the effect with a properly sized A/B test (BQ8) before scaling.
+3. **Plan the peak from September, not October**, and commit seasonal (Christmas) lines early: they sell 75% of their volume in Q4 (BQ2, BQ4). Use last year's weekly profile, adjusted for trend, as the forecasting baseline (BQ6).
+4. **Sell ranges as sets**: bundles for herb markers and Regency teaware, "complete the set" recommendations, and replenish all variants of a range together (BQ5).
+5. **Add two finance controls**: a price check at order entry (mispricing is the strongest cancellation driver, BQ3) and a monthly review of single-line manual non-product entries (BQ7). Capture the customer ID on manual entries.
+
+### Limitations
+
+Two years of history limit forecasting and seasonal modelling; the data has no costs or margins (revenue, not profit),
+no marketing or web data, and no product categories. All group differences are observational associations; only an
+experiment (BQ8) can establish cause and effect.
 
 ## BQ1: How have revenue, orders and customers changed?
 
@@ -411,7 +439,8 @@ explain and to score in a spreadsheet. In the boosting model, frequency, recency
 76% of the total gain; variety 12%, cancellation share 6%, tenure 5% and UK 0%.
 
 The decision tree uses the same signals: customers with more than about 2.5 purchase days who bought within the last
-~110 days are classed as returning; one-time buyers return only if they bought a wide range of products.
+~110 days are classed as returning; customers with one or two purchase days are classed as returning only if they
+bought a wide range of products (more than about 45).
 
 **Gains (2011 test, ranked by the logistic score):**
 
@@ -533,3 +562,102 @@ less common among the flagged invoices than among normal ones, because large who
 Isolation Forest builds random trees, and scikit-learn and `isotree` use different random number generators and
 implementation details, so individual scores differ. The near-perfect rank correlation and the 89% overlap of the
 flagged invoices show that both identify the same anomaly pattern.
+
+## BQ8. Are observed differences real, and how should a campaign be tested?
+
+Notebooks: [08_hypothesis_ab_py.ipynb](../notebooks/08_hypothesis_ab_py.ipynb) and [08_hypothesis_ab_r.ipynb](../notebooks/08_hypothesis_ab_r.ipynb).
+Window: Year 2 (1 Dec 2010 to 30 Nov 2011).
+
+**Important.** The dataset contains no randomised experiment. Part A shows whether observed differences are larger than
+chance, **not what causes them**. Part B designs the experiment that would answer a causal question.
+
+### Part A: Hypothesis tests on observed groups
+
+**A1. Order value, non-UK vs UK customers** (orders = invoices with kept product lines; value rounded to the penny).
+
+| | UK | Non-UK |
+|---|---|---|
+| Orders | 17,051 | 1,786 |
+| Mean order value | £464 | £817 |
+| Median order value | £296 | £387 |
+| Typical (geometric mean) order value | £245 | £393 |
+
+| Test | Result | Effect size |
+|---|---|---|
+| Welch t-test on log order value | t = 16.4, p < 0.001 | Typical non-UK order is **1.60×** the UK order |
+| Welch t-test on raw order value | t = 8.3, p < 0.001 | Mean difference **£352** |
+| Mann–Whitney U | p < 0.001 | A random non-UK order is larger than a random UK order with probability **0.61** |
+| Bootstrap 95% CI, median difference | £91 (£71 to £115) | |
+| Bootstrap 95% CI, mean difference | £352 (£273 to £438) | |
+
+**A2. Cancellation rate, Q4 (Oct–Dec) vs the rest of the year** (product lines with a customer ID).
+
+| | Lines | Cancelled | Rate |
+|---|---|---|---|
+| Q4 | 137,118 | 838 | 0.61% |
+| Rest of year | 237,071 | 1,939 | 0.82% |
+
+Two-proportion z-test: z = −7.1, p < 0.001. Q4 lines are cancelled **25% less often** (−0.21 percentage points,
+95% CI −0.26 to −0.15), consistent with the Q4 odds ratio of 0.80 in BQ3.
+
+**A3. Order size and cancellation** (chi-square test of independence).
+
+| Product lines per order | Orders | Share with an exactly cancelled line |
+|---|---|---|
+| 1 | 1,436 | 3.4% |
+| 2–10 | 5,586 | 4.0% |
+| 11–30 | 7,518 | 7.4% |
+| 31+ | 4,417 | 10.7% |
+
+Chi-square = 206.5, df = 3, p < 0.001; Cramér's V = 0.10 (a weak association). Larger orders contain a cancellation
+more often, but mainly because they have more lines that could be cancelled: per line, larger baskets cancel *less*
+(BQ3, odds ratio 0.65 per log unit of basket size). The unit of analysis changes the conclusion.
+
+**Summary.** All four tests are significant even at the Bonferroni-adjusted threshold (0.05 / 4 = 0.0125). With tens of
+thousands of observations, statistical significance is easy to reach; the effect sizes show which differences matter
+for the business: the order-value gap (1.6×) is large, the Q4 cancellation difference (0.2 points) is small in
+absolute terms.
+
+**Hypotheses.** "International customers place larger orders": **confirmed** (as an association; international
+customers are more often wholesalers or resellers, and shipping costs encourage larger orders). "Cancellation rates
+differ by season": **confirmed**, lower in Q4.
+
+### Part B: A/B test design for a win-back email
+
+**Scenario.** Test whether a win-back email makes "cooling" customers reorder. Customers are randomly split into a
+control group (no email) and a treatment group (email); the primary metric is the 90-day reorder rate.
+
+**Baseline.** As at 1 Sep 2011, 1,408 customers had last bought 30–120 days earlier; 59.2% of them reordered within
+90 days. That is the expected control-group rate.
+
+**Sample size** (two-sided test, α = 0.05, power 80%; the same result from R's `power.prop.test`):
+
+| Lift to detect | Treatment rate | Customers per group | Total | Total ÷ eligible customers |
+|---|---|---|---|---|
+| +2 points | 61.2% | 9,405 | 18,810 | 13.4× |
+| +3 points | 62.2% | 4,162 | 8,324 | 5.9× |
+| +5 points | 64.2% | 1,484 | 2,968 | 2.1× |
+| +7.5 points | 66.7% | 650 | 1,300 | 0.9× |
+| +10 points | 69.2% | 360 | 720 | 0.5× |
+
+With all 1,408 eligible customers (704 per group), the smallest reliably detectable lift is about **7 percentage
+points**. Using order value as the metric instead would need 9,546 orders per group to detect a 5% increase (2,502
+for 10%), so the reorder rate is the better primary metric.
+
+**Recommendations.**
+- A single monthly cohort can only detect large effects (about +7 points or more). To detect +5 points, pool about two monthly cohorts of eligible customers, or widen the eligibility window.
+- Fix the metric, the 90-day window, the sample size and the analysis (two-proportion z-test) **before** the test starts, and do not stop early when results look good ("peeking" inflates false positives).
+- Randomise at customer level and keep the control group untouched; check that both groups have similar recency, frequency and value before sending (BQ6's logistic score can be used as a balance check).
+- Report the lift with its confidence interval and the campaign cost per extra reorder, not only the p-value.
+
+### Python–R reconciliation (BQ8)
+
+| Result | Largest difference |
+|---|---|
+| Test statistics (t, U, z, chi-square) | relative difference below 4 × 10⁻⁸ (U identical) |
+| p-values | identical to 6 decimals |
+| Sample sizes per group | identical |
+| Bootstrap 95% intervals | within £2.5 (random resampling differs between languages) |
+
+Implementation note: order values are rounded to the penny. Without rounding, floating-point summation produced
+values that were tied in one language but not the other, which changed the ranks used by the Mann–Whitney test.

@@ -1,0 +1,5 @@
+comparison,test,statistic,p_value,effect,significant_0.05,significant_bonferroni
+"Order value, non-UK vs UK",Welch t-test (log value),16.375461,0.0,typical order x1.60,True,True
+"Order value, non-UK vs UK",Mann-Whitney U,18697530.0,0.0,P(non-UK > UK) = 0.614,True,True
+"Cancellation rate, Q4 vs rest",Two-proportion z-test,-7.099915,0.0,-0.21 pp,True,True
+Cancellation vs order size,Chi-square test,206.521148,0.0,Cramér's V = 0.104,True,True

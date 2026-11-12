@@ -22,9 +22,9 @@ and experiment design.
 | 11. BQ5 Market basket | [Python](notebooks/05_market_basket_py.ipynb), [R](notebooks/05_market_basket_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 12. BQ6 Forecasting and repeat purchase | [Python](notebooks/06_forecast_repeat_py.ipynb), [R](notebooks/06_forecast_repeat_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 13. BQ7 Anomalies | [Python](notebooks/07_anomalies_py.ipynb), [R](notebooks/07_anomalies_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
-| 14. BQ8 Hypothesis testing and experiment design | Group comparison tests, bootstrap intervals, A/B test sample-size plan | ⬜ Planned |
-| 15. Python–R reconciliation | Both languages agree on every key number | ⬜ Planned |
-| 16. Findings | [docs/03_findings.md](docs/03_findings.md), BQ1–BQ2 written; executive summary at the end | ⏳ In progress |
+| 14. BQ8 Hypothesis testing and experiment design | [Python](notebooks/08_hypothesis_ab_py.ipynb), [R](notebooks/08_hypothesis_ab_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
+| 15. Python–R reconciliation | [docs/04_reconciliation.md](docs/04_reconciliation.md) | ✅ Done |
+| 16. Findings | [docs/03_findings.md](docs/03_findings.md): executive summary, recommendations, BQ1–BQ8 | ✅ Done |
 | 17. Dashboard | Looker Studio report on Google Sheets summary tables | ⬜ Planned |
 | 18. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
 | 19. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
