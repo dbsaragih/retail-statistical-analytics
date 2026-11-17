@@ -1,9 +1,10 @@
 """Build the client workbook for retail-statistical-analytics (stage 18).
 
-Reads reports/dashboard_data/*.csv and writes reports/deliverables/retail_analytics_client_workbook.xlsx.
+Reads reports/dashboard_data/*.csv and writes the full client workbook (14 sheets). The full version is kept
+in private/ (git-ignored); reports/deliverables/ holds a public preview (Summary and BQ1–BQ3).
 
 Usage (WSL):
-    ~/venvs/stats/bin/python src/build_workbook.py reports/dashboard_data reports/deliverables/retail_analytics_client_workbook.xlsx
+    ~/venvs/stats/bin/python src/build_workbook.py reports/dashboard_data private/retail_analytics_client_workbook.xlsx
 
 Formulas are written without cached values; Excel calculates them on opening.
 """

@@ -2,6 +2,7 @@
 data/
 
 # ── Secrets and local settings ───────────────────────
+private/
 .env
 .vscode/
 .secrets/
