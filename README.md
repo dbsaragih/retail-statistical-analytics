@@ -25,9 +25,28 @@ and experiment design.
 | 14. BQ8 Hypothesis testing and experiment design | [Python](notebooks/08_hypothesis_ab_py.ipynb), [R](notebooks/08_hypothesis_ab_r.ipynb), [findings](docs/03_findings.md) | ✅ Done |
 | 15. Python–R reconciliation | [docs/04_reconciliation.md](docs/04_reconciliation.md) | ✅ Done |
 | 16. Findings | [docs/03_findings.md](docs/03_findings.md): executive summary, recommendations, BQ1–BQ8 | ✅ Done |
-| 17. Dashboard | Looker Studio report on Google Sheets summary tables | ⬜ Planned |
+| 17. Dashboard | [Looker Studio report](https://datastudio.google.com/reporting/f4108bc3-ed9f-4531-ad69-5212a8e33b36) (7 pages), [setup and design](docs/05_dashboard.md), [src/publish_to_sheets.py](src/publish_to_sheets.py) | ✅ Done |
 | 18. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
 | 19. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
+
+## Dashboard
+
+An interactive [Looker Studio report](https://datastudio.google.com/reporting/f4108bc3-ed9f-4531-ad69-5212a8e33b36) presents the results in seven pages, one question each:
+
+| Page | Question |
+|---|---|
+| 1. Overview | How is the business doing? |
+| 2. Seasonality | When do customers buy? |
+| 3. Customers | Who are the customers? |
+| 4. Products | What sells, and together? |
+| 5. Drivers and risk | What drives value and cancellations? |
+| 6. Forecast | What comes next? |
+| 7. Anomalies and tests | What is unusual, and which differences are real? |
+
+![Dashboard overview](reports/figures/dashboard/page1_overview.png)
+
+The notebooks write summary tables to `reports/dashboard_data/`; `src/publish_to_sheets.py` copies them to a Google
+Sheet that the report reads. See [docs/05_dashboard.md](docs/05_dashboard.md).
 
 ## Data and licence
 
