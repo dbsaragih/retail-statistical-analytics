@@ -26,7 +26,7 @@ and experiment design.
 | 15. Python–R reconciliation | [docs/04_reconciliation.md](docs/04_reconciliation.md) | ✅ Done |
 | 16. Findings | [docs/03_findings.md](docs/03_findings.md): executive summary, recommendations, BQ1–BQ8 | ✅ Done |
 | 17. Dashboard | [Looker Studio report](https://datastudio.google.com/reporting/f4108bc3-ed9f-4531-ad69-5212a8e33b36) (7 pages), [setup and design](docs/05_dashboard.md), [src/publish_to_sheets.py](src/publish_to_sheets.py) | ✅ Done |
-| 18. Client deliverable and presentation | Excel workbook (Google Sheets compatible), short deck | ⬜ Planned |
+| 18. Client deliverable and presentation | [Excel workbook](reports/deliverables/retail_analytics_client_workbook.xlsx) (14 sheets, native charts, A/B test calculator; built by [src/build_workbook.py](src/build_workbook.py)), [findings deck](reports/deliverables/retail_analytics_findings.pptx) (13 slides) | ✅ Done |
 | 19. Reproducibility | `requirements.txt`, final README | ⬜ Planned |
 
 ## Dashboard
